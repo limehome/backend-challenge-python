@@ -1,0 +1,87 @@
+[tool.poetry]
+name = "backend-challenge-service"
+version = "0.1.0"
+description = "Backend Challenge Service"
+authors = ["Ulada Rahautsova <ulada.rahautsova@gmail.com>"]
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+fastapi = "*"
+sqlalchemy="*"
+freezegun = "*"
+pydantic= "*"
+uvicorn = "*"
+
+[tool.poetry.group.dev-dependencies.dependencies]
+mypy = "*"
+pre-commit = "*"
+pytest = "*"
+pytest-github-actions-annotate-failures = "*"
+pytest-asyncio = "*"
+pytest-cov = "*"
+respx = "*"
+ruff = "*"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest-asyncio = "^1.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+extend-exclude = [
+    ".DS_Store",
+    ".dockerignore",
+    ".gitignore",
+    ".idea",
+    "__pycache__",
+    "dist",
+    ".coverage",
+]
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # isort
+    "I",
+    # pycodestyle rules
+    "W",
+    # flake8-simplify
+    "SIM",
+    # flake8-pytest-style rules
+    "PT",
+    # Found commented out code
+    "ERA",
+    "A",
+    "EM",
+    "Q",
+    "TC",
+    "ANN"
+]
+
+# coverage.py settings
+[tool.coverage.run]
+branch = true
+relative_files = true
+omit = [
+    "*__init__*",
+    "*/tests/*"
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = [
+    "freeze_time: Freeze time for tests (requires pytest-freezegun)",
+]

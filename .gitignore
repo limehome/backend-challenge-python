@@ -1,5 +1,33 @@
-.idea/
+# Produced by Docker
 .docker/
-venv/
-**/*.db
-__pycache__/
+
+# Produced by Python.
+*.pyc
+*.egg-info
+*.bak
+__pycache__
+_version.py
+
+# Produced by virtualenv.
+ENV
+VENV
+.venv
+venv
+
+# IDE
+.DS_Store
+.idea/
+
+# coverage
+/htmlcov/
+/coverage.xml
+/.coverage
+/.coverage.*
+Downloads/*
+
+.git/
+.tox
+html/*
+
+# DB
+*.db

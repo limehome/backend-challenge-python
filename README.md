@@ -1,82 +1,117 @@
-# Backend test
+##Implementation: 
 
-> If you want, you may also complete this challenge in:
-> [TypeScript](https://github.com/limehome/backend-challenge-typescript)
-> or
-> [Java](https://github.com/limehome/backend-challenge-java)
+## Release Notes:
 
+  * The mentioned bug is fixed, and several other related cases are found and fixed. Many new tests for positive and negative scenarios are added.
+  * The new API to PATCH existing booking is implemented. This API can be used to extend a number of nights. Similar logic from booking creation to find date conflicts is applied. Many tests for positive and negative scenarios are added.
+  * In crud.py the legacy query() method was replaced with select.where(). See the SQLAlchemy docs: https://docs.sqlalchemy.org/en/20/orm/queryguide/query.html
+  * Introduced pyproject.toml, Poetry and Make for easier dependency management and project execution.
+  * Added linter rules and ensured the codebase is free of linter issues.
+  * Added pre-commit hook to run tests locally before pushing to the repository.
+  * Refactored model code to follow SQLAlchemy 2.0 style.
+  * Added validation to prevent booking of zero or fewer nights.
+  * Added GitHub Actions. 
+  * Added code coverage verification. Current code coverage is 100%.
+  * Updated Swagger documentation.
 
-## Context
+## TODO Improvements:
 
-We would like you to help us with a small service that we have for handling bookings. A booking for us simply tells us which guest will be staying in which unit, and when they arrive and the number of nights that guest will be enjoying our amazing suites, comfortable beds, great snac.. apologies - I got distracted. Bookings are at the very core of our business and it's important that we get these right - we want to make sure that guests always get what they paid for, and also trying to ensure that our unit are continually booked and have as few empty nights where no-one stays as possible. A unit is simply a location that can be booked, think like a hotel room or even a house. For the exercise today, we would like you to help us solve an issue we've been having with our example service, as well as implement a new feature to improve the code base. While this is an opportunity for you to showcase your skills, we also want to be respectful of your time and suggest spending no more than 3 hours on this (of course you may also spend longer if you feel that is necessary)
+* Move code from the synchronous engine to the asynchronous engine if another database is used in production.
+* Add logging and monitoring.
+* Split tests into smaller units.
 
-### You should help us:
-Identify and fix a bug that we've been having with bookings - there seems to be something going wrong with the booking process where a guest will arrive at a unit only to find that it's already booked and someone else is there!
+## Assumptions:
+   
+   * I assumed it is valid for the same guest to book the same or different properties for different time periods. For example, a guest may travel to Berlin for a few days, then go to Cologne for a few days, and finally return to Berlin before flying back.
+   * I didn't address an edge case when the same guest books the same unit without gaps. I.e., it's allowed for the same guest to book unit from 24-09-2025 to 28-09-2025 and from 28-09-2025 to 30-09-2025.
+   * I did not implement a check for maximum number of nights per unit. In a real development process, I would clarify this requirement in the specifications.
+   * I assumed than new API takes the total number of nights as a parameter, rather than the number of additional nights.
 
-### Implement a new feature: 
-Allowing guests to extend their stays if possible. It happens that <strike>sometimes</strike> all the time people love staying at our locations so much that they want to extend their stay and remain there a while longer. We'd like a new API that will let them do that 
+## How to run:
 
-While we provide a choice of projects to work with (either `TS`, `Python`, or `Kotlin`), we understand if you want to implement this in something you're more comfortable with. You are free to re-implement the parts that we have provided in another language, however this may take some time and we would encourage you not spend more time than you're comfortable with!
+### URLs
+The urls that are accessible from localhost:
+* Service: http://localhost:8000
+* OpenAPI docs of Service: http://localhost:8000/docs
 
-When implementing, make sure you follow known best practices around architecture, testability, and documentation.
+## Docker only 
+Prerequisites:
+* Docker Compose V2 (aka `docker compose` without the `-` in between)
+* Make
 
+### Essentials
+Get everything up and running:
+```
+make start
+```
+This starts the Docker container for the app.
 
-## How to run
-
-### Prerequisutes
-
-Make sure to have the following installed
-
-- Python3
-- git
-- docker
-
-### Setup
-
-To get started, clone the repository locally and run the following
-
-```shell
-[~]$ docker-compose up
-Attaching to fastapi-application
-fastapi-application  | INFO:     Started server process [1]
-fastapi-application  | INFO:     Waiting for application startup.
-fastapi-application  | INFO:     Application startup complete.
-fastapi-application  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-fastapi-application  | INFO:     192.168.112.1:64034 - "GET / HTTP/1.1" 200 OK
+Bring everything down:
+```
+make stop
 ```
 
-To make sure that everything is setup properly, open http://localhost:8000 in your browser and you should see an OK message.
-The logs should be looking like this
+For convenience, there's also `make restart` which runs `stop` and `start`.
 
-```shell
-fastapi-application  | INFO:     192.168.112.1:64034 - "GET /docs HTTP/1.1" 200 OK
+### Testing
+To run the pytest test:
+```
+make test
 ```
 
-To navigate to the swagger docs, open the url http://localhost:8000/docs , the logs should be looking like this
-
-```shell
-fastapi-application  | INFO:     192.168.112.1:64034 - "GET /openapi.json HTTP/1.1" 200 OK
+### Linting
+I  used `ruff` for linting, `ruff format` for automatic code formatting, and `mypy` for static type checking.
+You can run all of them with:
+```
+make lint
 ```
 
-### Running tests
+### Python dependencies
+To add or remove dependencies, modify _pyproject.toml_ and generate a fresh lock file with: 
+```
+make update-dependencies
+```
+After doing changes related to the dependencies, containers should be restarted.
 
-Open your terminal and run the following commands in the cloned directory (ignore the failing test)
+## Development (local Python environment)
 
-```shell
-[~]$ source ./venv/bin/activate  # activate the virtual env shell
-(venv)[~]$ pytest
+### Essentials
 
-=========================================================================== test session starts ============================================================================
-platform linux -- Python 3.13.5, pytest-7.4.4, pluggy-1.4.0
-rootdir: /code
-plugins: anyio-4.2.0, asyncio-0.23.4
-asyncio: mode=Mode.STRICT
-collected 5 items                                                                                                                                                          
+#### Creating the local Python environment
+Create a poetry environment, activate it and install the dependencies:
+```
+pip install poetry
+poetry env use python3.13
+poetry install
+poetry env activate
+````
 
-========================================================================= short test summary info ==========================================================================
-FAILED app/test_bookings.py::test_different_guest_same_unit_booking_different_date - AssertionError: {"guest_name":"GuestB","unit_id":"1","check_in_date":"2023-05-22","number_of_nights":5}
-================================================================= 1 failed, 4 passed, 5 warnings in 1.92s =================================================================
+#### Running the service
 
+Run the service locally with hot reload enabled:
+```
+poetry run uvicorn app.main:app --reload
 ```
 
+### Linting with pre-commit
+I added a pre-commit to automatically run on each commit:
+Install pre-commte
+```
+pre-commit install
+```
 
+Run over all codebase:
+```
+pre-commit run --all-files
+```
+
+## Continuous integration aka CI
+
+There's a GitHub workflow (ci.yml) which runs pre-commit (`ruff`, `ruff format`, and `mypy`) for the whole codebase and the pytest test suite on each push.
+
+## Run Coverage
+
+Coverage can be run locally using the following command.
+```
+ coverage run -m --branch pytest --cov . --cov-report term-missing
+```
