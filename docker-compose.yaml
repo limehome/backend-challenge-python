@@ -3,6 +3,9 @@ services:
     build:
       context: .
     container_name: fastapi-application
+    volumes:
+      - ./app:/code/app
+      - ./data:/code/data
     environment:
       PORT: 8000
     ports:

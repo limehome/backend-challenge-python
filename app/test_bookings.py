@@ -1,4 +1,5 @@
 import datetime
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,7 +9,8 @@ from sqlalchemy.orm import sessionmaker
 from app.database import Base
 from app.main import app, get_db
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+Path("data").mkdir(parents=True, exist_ok=True)
+SQLALCHEMY_DATABASE_URL = "sqlite:///./data/test.db"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
