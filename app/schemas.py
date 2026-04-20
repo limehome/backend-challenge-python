@@ -10,3 +10,9 @@ class BookingBase(BaseModel):
     unit_id: str
     check_in_date: datetime.date
     number_of_nights: int
+
+
+class BookingExtendRequest(BaseModel):
+    model_config = ConfigDict()
+
+    additional_nights: int
