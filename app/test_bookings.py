@@ -33,15 +33,15 @@ app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 GUEST_A_UNIT_1: dict = {
-    'unit_id': '1', 'guest_name': 'GuestA', 'check_in_date': datetime.date.today().strftime('%Y-%m-%d'),
+    'unit_id': '1', 'guest_name': 'GuestA', 'check_in_date': '2023-05-21',
     'number_of_nights': 5
 }
 GUEST_A_UNIT_2: dict = {
-    'unit_id': '2', 'guest_name': 'GuestA', 'check_in_date': datetime.date.today().strftime('%Y-%m-%d'),
+    'unit_id': '2', 'guest_name': 'GuestA', 'check_in_date': '2023-05-21',
     'number_of_nights': 5
 }
 GUEST_B_UNIT_1: dict = {
-    'unit_id': '1', 'guest_name': 'GuestB', 'check_in_date': datetime.date.today().strftime('%Y-%m-%d'),
+    'unit_id': '1', 'guest_name': 'GuestB', 'check_in_date': '2023-05-21',
     'number_of_nights': 5
 }
 
@@ -135,9 +135,68 @@ def test_different_guest_same_unit_booking_different_date(test_db):
             'unit_id': '1',  # same unit
             'guest_name': 'GuestB',  # different guest
             # check_in date of GUEST A + 1, the unit is already booked on this date
-            'check_in_date': (datetime.date.today() + datetime.timedelta(1)).strftime('%Y-%m-%d'),
+            'check_in_date': '2023-05-22',
             'number_of_nights': 5
         }
     )
     assert response.status_code == 400, response.text
     assert response.json()['detail'] == 'For the given check-in date, the unit is already occupied'
+
+
+@pytest.mark.freeze_time('2023-05-21')
+def test_partial_overlap_booking(test_db):
+    # Create booking: 2023-05-21 to 2023-05-26 (5 nights)
+    response = client.post("/api/v1/booking", json=GUEST_A_UNIT_1)
+    assert response.status_code == 200
+
+    # Try overlapping booking: 2023-05-24 to 2023-05-28 (4 nights) - overlaps with existing
+    response = client.post(
+        "/api/v1/booking",
+        json={
+            'unit_id': '1',
+            'guest_name': 'GuestC',
+            'check_in_date': '2023-05-24',
+            'number_of_nights': 4
+        }
+    )
+    assert response.status_code == 400
+    assert 'occupied' in response.json()['detail']
+
+
+@pytest.mark.freeze_time('2023-05-21')
+def test_adjacent_booking_allowed(test_db):
+    # Create booking: 2023-05-21 to 2023-05-26
+    response = client.post("/api/v1/booking", json=GUEST_A_UNIT_1)
+    assert response.status_code == 200
+
+    # Try adjacent booking: starts exactly when first ends (2023-05-26) - should be allowed
+    response = client.post(
+        "/api/v1/booking",
+        json={
+            'unit_id': '1',
+            'guest_name': 'GuestC',
+            'check_in_date': '2023-05-26',
+            'number_of_nights': 2
+        }
+    )
+    assert response.status_code == 200
+
+
+@pytest.mark.freeze_time('2023-05-21')
+def test_full_overlap_booking(test_db):
+    # Create booking: 2023-05-21 to 2023-05-26
+    response = client.post("/api/v1/booking", json=GUEST_A_UNIT_1)
+    assert response.status_code == 200
+
+    # Try same dates with a different guest - should fail because the unit is already occupied
+    response = client.post(
+        "/api/v1/booking",
+        json={
+            'unit_id': '1',
+            'guest_name': 'GuestC',
+            'check_in_date': '2023-05-21',
+            'number_of_nights': 5
+        }
+    )
+    assert response.status_code == 400
+    assert 'occupied' in response.json()['detail']

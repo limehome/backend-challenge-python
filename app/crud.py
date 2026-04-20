@@ -1,4 +1,5 @@
 from typing import Tuple
+from datetime import timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -39,13 +40,18 @@ def is_booking_possible(db: Session, booking: schemas.BookingBase) -> Tuple[bool
     ).scalars().first():
         return False, 'The same guest cannot be in multiple units at the same time'
 
-    # check 3 : Unit is available for the check-in date
-    if db.execute(
-        select(models.Booking).where(
-            models.Booking.check_in_date == booking.check_in_date,
-            models.Booking.unit_id == booking.unit_id,
-        )
-    ).scalars().first():
-        return False, 'For the given check-in date, the unit is already occupied'
+    # check 3 : Unit is available for the entire booking period (no overlapping bookings)
+    existing_bookings = db.execute(
+        select(models.Booking).where(models.Booking.unit_id == booking.unit_id)
+    ).scalars().all()
+    
+    new_check_in = booking.check_in_date
+    new_check_out = booking.check_in_date + timedelta(days=booking.number_of_nights)
+    
+    for existing in existing_bookings:
+        existing_check_out = existing.check_in_date + timedelta(days=existing.number_of_nights)
+        # Check for overlap: two ranges [a,b) and [c,d) overlap if a < d and c < b
+        if new_check_in < existing_check_out and existing.check_in_date < new_check_out:
+            return False, 'For the given check-in date, the unit is already occupied'
 
     return True, 'OK'
