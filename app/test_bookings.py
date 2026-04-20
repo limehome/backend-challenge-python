@@ -162,6 +162,46 @@ def test_partial_overlap_booking(test_db):
     assert response.status_code == 400
     assert 'occupied' in response.json()['detail']
 
+@pytest.mark.freeze_time('2023-05-21')
+def test_extend_stay_successful(test_db):
+    response = client.post("/api/v1/booking", json=GUEST_A_UNIT_1)
+    assert response.status_code == 200
+
+    response = client.patch(
+        "/api/v1/booking/1/extend",
+        json={
+            'additional_nights': 2
+        }
+    )
+    assert response.status_code == 200
+    assert response.json()['number_of_nights'] == 7
+    assert response.json()['check_in_date'] == '2023-05-21'
+
+
+@pytest.mark.freeze_time('2023-05-21')
+def test_extend_stay_conflict(test_db):
+    response = client.post("/api/v1/booking", json=GUEST_A_UNIT_1)
+    assert response.status_code == 200
+
+    response = client.post(
+        "/api/v1/booking",
+        json={
+            'unit_id': '1',
+            'guest_name': 'GuestB',
+            'check_in_date': '2023-05-26',
+            'number_of_nights': 2
+        }
+    )
+    assert response.status_code == 200
+
+    response = client.patch(
+        "/api/v1/booking/1/extend",
+        json={
+            'additional_nights': 1
+        }
+    )
+    assert response.status_code == 400
+    assert 'occupied' in response.json()['detail']
 
 @pytest.mark.freeze_time('2023-05-21')
 def test_adjacent_booking_allowed(test_db):

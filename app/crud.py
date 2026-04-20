@@ -24,6 +24,38 @@ def create_booking(db: Session, booking: schemas.BookingBase) -> models.Booking:
     return db_booking
 
 
+def extend_booking(db: Session, booking_id: int, additional_nights: int) -> models.Booking:
+    booking = db.execute(
+        select(models.Booking).where(models.Booking.id == booking_id)
+    ).scalars().first()
+    if not booking:
+        raise UnableToBook('Booking not found')
+    if additional_nights <= 0:
+        raise UnableToBook('Additional nights must be positive')
+
+    new_number_of_nights = booking.number_of_nights + additional_nights
+    new_check_in = booking.check_in_date
+    new_check_out = booking.check_in_date + timedelta(days=new_number_of_nights)
+
+    existing_bookings = db.execute(
+        select(models.Booking).where(
+            models.Booking.unit_id == booking.unit_id,
+            models.Booking.id != booking_id,
+        )
+    ).scalars().all()
+
+    for existing in existing_bookings:
+        existing_check_out = existing.check_in_date + timedelta(days=existing.number_of_nights)
+        if new_check_in < existing_check_out and existing.check_in_date < new_check_out:
+            raise UnableToBook('The unit is already occupied during the requested dates')
+
+    booking.number_of_nights = new_number_of_nights
+    db.add(booking)
+    db.commit()
+    db.refresh(booking)
+    return booking
+
+
 def is_booking_possible(db: Session, booking: schemas.BookingBase) -> Tuple[bool, str]:
     # check 1 : The Same guest cannot book the same unit multiple times
     if db.execute(
