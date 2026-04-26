@@ -57,3 +57,24 @@ docker compose run --rm api uv run pytest
 ```
 
 API docs: http://localhost:8000/docs
+
+## My Submission
+
+### Running the tests
+
+```bash
+docker compose run --rm api uv run pytest -v
+```
+
+All 7 tests pass, including the originally failing `test_different_guest_same_unit_booking_different_date`.
+
+### Changes made
+
+- `app/crud.py` — Fixed the double-booking bug in `is_booking_possible()` (check 3)
+  and added `extend_booking()` with the `UnableToExtend` exception class
+- `app/schemas.py` — Added `BookingResponse` schema that includes `id` in the response
+- `app/main.py` — Updated `response_model` to `BookingResponse` on both endpoints;
+  added `PATCH /api/v1/booking/{booking_id}/extend` route
+- `app/test_bookings.py` — Added two tests for the extend-stay feature
+
+See [NOTES.md](./NOTES.md) for detailed reasoning and trade-offs.

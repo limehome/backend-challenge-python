@@ -141,3 +141,33 @@ def test_different_guest_same_unit_booking_different_date(test_db):
     )
     assert response.status_code == 400, response.text
     assert response.json()['detail'] == 'For the given check-in date, the unit is already occupied'
+
+@pytest.mark.freeze_time('2023-05-21')
+def test_extend_booking(test_db):
+    # Create a booking
+    response = client.post("/api/v1/booking", json=GUEST_A_UNIT_1)
+    assert response.status_code == 200
+    booking_id = response.json()["id"]
+
+    # Extend it by 3 nights
+    response = client.patch(f"/api/v1/booking/{booking_id}/extend", json={"additional_nights": 3})
+    assert response.status_code == 200
+    assert response.json()["number_of_nights"] == GUEST_A_UNIT_1["number_of_nights"] + 3
+
+
+@pytest.mark.freeze_time('2023-05-21')
+def test_extend_booking_blocked_by_next_booking(test_db):
+    # GuestA in unit 1 for 5 nights starting today
+    response = client.post("/api/v1/booking", json=GUEST_A_UNIT_1)
+    booking_id = response.json()["id"]
+
+    # GuestB books the same unit starting today+5 (right after GuestA leaves)
+    response = client.post("/api/v1/booking", json={
+        **GUEST_B_UNIT_1,
+        "check_in_date": (datetime.date.today() + datetime.timedelta(5)).strftime('%Y-%m-%d'),
+    })
+    assert response.status_code == 200
+
+    # GuestA tries to extend — would overlap with GuestB
+    response = client.patch(f"/api/v1/booking/{booking_id}/extend", json={"additional_nights": 3})
+    assert response.status_code == 400
