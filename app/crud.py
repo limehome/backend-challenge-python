@@ -1,3 +1,4 @@
+import datetime
 from typing import Tuple
 
 from sqlalchemy import select
@@ -39,13 +40,14 @@ def is_booking_possible(db: Session, booking: schemas.BookingBase) -> Tuple[bool
     ).scalars().first():
         return False, 'The same guest cannot be in multiple units at the same time'
 
-    # check 3 : Unit is available for the check-in date
-    if db.execute(
-        select(models.Booking).where(
-            models.Booking.check_in_date == booking.check_in_date,
-            models.Booking.unit_id == booking.unit_id,
-        )
-    ).scalars().first():
-        return False, 'For the given check-in date, the unit is already occupied'
+    # check 3 : Unit is available for the requested date range
+    new_booking_check_out = booking.check_in_date + datetime.timedelta(days=booking.number_of_nights)
+    existing_bookings = db.execute(
+        select(models.Booking).where(models.Booking.unit_id == booking.unit_id)
+    ).scalars().all()
+    for existing_booking in existing_bookings:
+        existing_booking_check_out = existing_booking.check_in_date + datetime.timedelta(days=existing_booking.number_of_nights)
+        if booking.check_in_date < existing_booking_check_out and existing_booking.check_in_date < new_booking_check_out:
+            return False, 'For the given check-in date, the unit is already occupied'
 
     return True, 'OK'
