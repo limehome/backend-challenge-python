@@ -24,6 +24,26 @@ def create_booking(db: Session, booking: schemas.BookingBase) -> models.Booking:
     return db_booking
 
 
+def extend_booking(db: Session, booking_id: int, new_number_of_nights: int) -> models.Booking | None:
+    booking = db.get(models.Booking, booking_id)
+    if booking is None:
+        return None
+    if new_number_of_nights <= booking.number_of_nights:
+        raise UnableToBook('Extension must increase the number of nights')
+    if unit_has_overlap(
+        db,
+        unit_id=booking.unit_id,
+        check_in_date=booking.check_in_date,
+        number_of_nights=new_number_of_nights,
+        exclude_booking_id=booking.id,
+    ):
+        raise UnableToBook('The extended stay would overlap an existing booking')
+    booking.number_of_nights = new_number_of_nights
+    db.commit()
+    db.refresh(booking)
+    return booking
+
+
 def is_booking_possible(db: Session, booking: schemas.BookingBase) -> Tuple[bool, str]:
     # check 1 : The Same guest cannot book the same unit multiple times
     if db.execute(
@@ -41,13 +61,21 @@ def is_booking_possible(db: Session, booking: schemas.BookingBase) -> Tuple[bool
         return False, 'The same guest cannot be in multiple units at the same time'
 
     # check 3 : Unit is available for the requested date range
-    new_booking_check_out = booking.check_in_date + datetime.timedelta(days=booking.number_of_nights)
-    existing_bookings = db.execute(
-        select(models.Booking).where(models.Booking.unit_id == booking.unit_id)
-    ).scalars().all()
-    for existing_booking in existing_bookings:
-        existing_booking_check_out = existing_booking.check_in_date + datetime.timedelta(days=existing_booking.number_of_nights)
-        if booking.check_in_date < existing_booking_check_out and existing_booking.check_in_date < new_booking_check_out:
-            return False, 'For the given check-in date, the unit is already occupied'
+    if unit_has_overlap(db, booking.unit_id, booking.check_in_date, booking.number_of_nights):
+        return False, 'For the given check-in date, the unit is already occupied'
 
     return True, 'OK'
+
+
+def unit_has_overlap(db: Session, unit_id: str, check_in_date: datetime.date, number_of_nights: int, exclude_booking_id: int | None = None) -> bool:
+    new_booking_check_out = check_in_date + datetime.timedelta(days=number_of_nights)
+    existing_bookings = db.execute(
+        select(models.Booking).where(models.Booking.unit_id == unit_id)
+    ).scalars().all()
+    for existing_booking in existing_bookings:
+        if existing_booking.id == exclude_booking_id:
+            continue
+        existing_booking_check_out = existing_booking.check_in_date + datetime.timedelta(days=existing_booking.number_of_nights)
+        if check_in_date < existing_booking_check_out and existing_booking.check_in_date < new_booking_check_out:
+            return True
+    return False

@@ -10,3 +10,11 @@ class BookingBase(BaseModel):
     unit_id: str
     check_in_date: datetime.date
     number_of_nights: int
+
+
+class Booking(BookingBase):
+    id: int
+
+
+class BookingExtension(BaseModel):
+    number_of_nights: int
