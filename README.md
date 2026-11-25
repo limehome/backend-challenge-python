@@ -56,4 +56,11 @@ Run tests (one test intentionally fails — that's the bug to fix):
 docker compose run --rm api uv run pytest
 ```
 
+Lint and format ([ruff](https://docs.astral.sh/ruff/)):
+
+```shell
+docker compose run --rm api uv run ruff check
+docker compose run --rm api uv run ruff format
+```
+
 API docs: http://localhost:8000/docs
