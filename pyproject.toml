@@ -1,21 +1,25 @@
 [project]
 name = "backend-challenge-python"
 version = "0.1.0"
-requires-python = ">=3.13"
+requires-python = ">=3.15"
 dependencies = [
-    "fastapi[standard]>=0.115",
-    "sqlalchemy>=2.0",
-    "pydantic>=2.9",
+    "fastapi[standard]>=0.165",
+    "sqlalchemy>=2.1.9",
+    "pydantic>=2.14.4",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=8.0",
-    "freezegun>=1.5",
+    "pytest>=9.2",
+    "freezegun>=1.5.5",
+    "ruff>=0.17.6",
 ]
 
-[tool.pytest.ini_options]
+[tool.pytest]
 testpaths = ["app"]
 markers = [
     "freeze_time: Freeze time to a specific date for testing",
 ]
+
+[tool.ruff]
+# Ruff defaults: rule set, line length 88, target version from `requires-python`.
