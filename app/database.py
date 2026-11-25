@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 Path("data").mkdir(parents=True, exist_ok=True)
 SQLALCHEMY_DATABASE_URL = "sqlite:///./data/app.db"
